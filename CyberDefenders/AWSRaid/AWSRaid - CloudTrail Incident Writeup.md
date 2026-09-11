@@ -1,4 +1,15 @@
+# AWSRaid - CloudTrail Incident Writeup
 
+**Category:** Cloud Threat Hunting / Incident Response  
+**Platform:** CyberDefenders  
+**Tools:** Splunk, AWS CloudTrail  
+
+---
+
+## Connected Investigations
+- **Cloud Threat Hunting Comparison:** Compare with [CyberDefenders: AzureHunt](<../AzureHunt/Writeup.md>), analyzing Microsoft Azure / Entra ID audit logs for unauthorized database exports, role escalation (`Owner`), and persistence.
+
+---
 
 | Field                    | Value                                          |
 | ------------------------ | ---------------------------------------------- |

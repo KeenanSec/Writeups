@@ -6,6 +6,17 @@ Memory forensics investigation of a Windows host (`memory.dmp`) using Volatility
 
 ---
 
+## Connected Investigations
+- **Memory Forensics & Process Triage Suite:**
+  - [CyberDefenders: Amadey](<../Amadey/README.md>) — Process masquerading and injection into `rundll32.exe`.
+  - [CyberDefenders: Redline](<../Redline/Writeup.md>) — Volatility process trees, `malfind` RWX detection, and C2 extraction.
+  - [CyberDefenders: Ramnit](<../Ramnit/Writeup.md>) — Carving binaries from RAM and calculating cryptographic hashes.
+  - [CyberDefenders: QBot Lab](<../QBot Lab/Writeup.md>) — Memory forensics, network socket analysis, and document carving.
+- **Antivirus Defense Evasion:**
+  - [CyberDefenders: MeteorHit - Indra Lab](<../MeteorHit - Indra Lab/Writeup.md>) — Adding Windows Defender exclusions to protect staged payloads.
+
+---
+
 ## Q1 — Parent process of the malicious PowerShell
 
 **Question:** What is the name of the suspicious process that spawned two malicious PowerShell processes?

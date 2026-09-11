@@ -1,5 +1,21 @@
 # GoldenSpray Lab — Writeup
 
+**Category:** Threat Hunting / Active Directory Forensics  
+**Platform:** CyberDefenders  
+**Tools:** Splunk, Sysmon, Windows Event Logs  
+
+---
+
+## Connected Investigations
+- **Active Directory & Lateral Movement Suite:**
+  - [CyberDefenders: PoisonedCredentials](<../PoisonedCredentials/PoisonedCredentials.md>) — LLMNR/NBT-NS poisoning and NTLMv2 credential harvesting.
+  - [CyberDefenders: Psexec](<../Psexec/Writeup.md>) — Tracking SMB lateral movement, `ADMIN$`, and `IPC$` named pipes.
+  - [CyberDefenders: MeteorHit - Indra Lab](<../MeteorHit - Indra Lab/Writeup.md>) — Enterprise domain compromise and wiper distribution via GPO.
+  - [Root-Me: Kerberos - Pre-Authentication](<../../Root-Me/Kerberos - Pre-Authentication/Writeup.md>) — Kerberos ticket request analysis and offline hash cracking.
+  - [TryHackMe: Block](<../../TryHackMe/Block/Block Writeup THM.md>) — LSASS dumping and SMB3 traffic decryption.
+
+---
+
 ## Summary of Key Findings
 
 | Finding / Artifact | Value / Details |

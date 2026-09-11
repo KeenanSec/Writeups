@@ -7,6 +7,15 @@ A memory forensics investigation of a Windows host infected with **Amadey**, a m
 
 ---
 
+## Connected Investigations
+- **Memory Forensics & Process Triage Suite:**
+  - [CyberDefenders: Volatility Traces](<../Volatility_Traces/Volatility_Traces_Writeup.md>) — Process hierarchy analysis, PowerShell tracing, and defense evasion.
+  - [CyberDefenders: Redline](<../Redline/Writeup.md>) — Uncovering masquerading executables (`oneetx.exe`), RWX memory injection, and C2 extraction.
+  - [CyberDefenders: Ramnit](<../Ramnit/Writeup.md>) — Carving binaries from RAM, calculating SHA1 hashes, and C2 triage.
+  - [CyberDefenders: QBot Lab](<../QBot Lab/Writeup.md>) — Endpoint memory analysis, network socket triage, and document carving.
+
+---
+
 ## Q1 - Parent process behind the malicious activity
 
 Running `windows.cmdline` shows a process named `lssass.exe` (note the double `s`, masquerading as the legitimate `lsass.exe`) executing from a user's `Temp` directory instead of `C:\Windows` or `C:\Program Files`. Legitimate `lsass.exe` only ever runs from `System32`, so this is the rogue parent.

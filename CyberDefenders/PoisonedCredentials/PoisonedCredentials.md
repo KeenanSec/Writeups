@@ -1,65 +1,130 @@
+# PoisonedCredentials — CyberDefenders Writeup
 
+**Category:** Network Forensics / Credential Access  
+**Platform:** CyberDefenders  
+**Organization:** CyberCactus (`cybercactus.local`)  
+**Tools:** Wireshark, LLMNR/NBT-NS Triage  
 
-| Victim   | 192.168.232.162 |
-| -------- | --------------- |
-| Attacker | 192.168.232.215 |
+---
 
-In the context of the incident described in the scenario, the attacker initiated their actions by taking advantage of benign network traffic from legitimate machines. Can you identify the specific mistyped query made by the machine with the IP address 192.168.232.162?
+## Connected Investigations
+- **Organization Tenant Overlap:** Shares the **CyberCactus** environment with [CyberDefenders: AzureHunt](<../AzureHunt/Writeup.md>) (`cybercactus.onmicrosoft.com`).
+- **Active Directory & Credential Abuse:**
+  - [CyberDefenders: GoldenSpray Lab](<../GoldenSpray Lab/Writeup.md>) — Password spraying against AD accounts and domain persistence.
+  - [CyberDefenders: Psexec](<../Psexec/Writeup.md>) — Tracking SMB authentication and lateral movement.
+  - [TryHackMe: Block](<../../TryHackMe/Block/Block Writeup THM.md>) — Decrypting SMB traffic with extracted NTLM hashes.
 
-LLMNR and NBT-NS are protocols used to resolve names when DNS is unavailable and as aresult is susceptible to MITM attacks 
+---
 
+## Scenario Overview
 
-I asked to identify the specific mistyped query made by 192.168.232.162 so I used the filter `llmnr and ip.src == 192.168.232.162` to make it alot easier and find llmnr queries from this IP
+Adversaries on an internal subnet can weaponize LLMNR (Link-Local Multicast Name Resolution) and NBT-NS (NetBIOS Name Service) broadcast requests when endpoints attempt to resolve mistyped network share or printer names. By deploying tools like Responder to poison these resolution requests, the attacker tricks victim machines into authenticating against the rogue host, harvesting NTLMv2 password hashes across the wire.
 
-In this screenshot you can see that at the end of each packet it contains `fileshaare`  which seems to be misspelled.
-![[Pasted image 20260729002208.png]]
+In this investigation, we analyze `PoisonedCredentials.pcap` to identify mistyped queries, locate the rogue poisoning host, identify impacted victim systems, and track subsequent SMB access against target workstations.
 
-**********
+---
 
-Q2
+## Summary of Key Entities
 
+| Role | IP Address | Hostname / Details |
+| :--- | :--- | :--- |
+| **Rogue Attacker Host** | `192.168.232.215` | Responding to poisoned broadcasts |
+| **First Victim Host** | `192.168.232.162` | Queried `fileshaare` |
+| **Second Victim Host** | `192.168.232.176` | Queried `prinetr`, compromised account `janesmith` |
+| **Compromised Target Host** | `192.168.232.176` | `ACCOUNTINGPC` (`cybercactus.local`) |
 
-We are investigating a network security incident. To conduct a thorough investigation, We need to determine the IP address of the rogue machine. What is the IP address of the machine acting as the rogue entity?
+---
 
-Answer : `192.168.232.215`
+## Walkthrough
 
-`192.168.232.215` is the rogue host because it repeatedly sent LLMNR query responses claiming to be `fileshaare` to the victim `192.168.232.162`, which is an indicator of LLMNR poisoning 
+### Q1 — Identifying the Mistyped Resolution Query
 
+When Windows endpoints cannot resolve a hostname via DNS, they broadcast LLMNR and NBT-NS queries across the local subnet. Applying the Wireshark filter:
 
-![[Pasted image 20260729003528.png]]
-*********
+```text
+llmnr and ip.src == 192.168.232.162
+```
 
-Q3
+![LLMNR query showing mistyped fileshaare string](images/Pasted%20image%2020260729002208.png)
 
+The victim host queries for a misspelled share name:
 
+> **Question:** Can you identify the specific mistyped query made by the machine with the IP address 192.168.232.162?  
+> **Answer:** `fileshaare`
 
-As part of our investigation, identifying all affected machines is essential. What is the IP address of the second machine that received poisoned responses from the rogue machine?
+---
 
-Answer : ` 192.168.232.176`
+### Q2 — IP Address of the Rogue Poisoning Machine
 
-I found this out by looking for llmnr responses from the attacker IP I found from the last question using this filter `ip.src == 192.168.232.215 and llmnr`. Then I was able to see that the attacker was able to poison `192.168.232.176` by taking advantage of the victim trying to resolve `prinetr`
+Filtering for LLMNR responses claiming to be the authoritative host for `fileshaare`:
 
-![[Pasted image 20260729003917.png]]
+![Rogue host poisoning LLMNR query](images/Pasted%20image%2020260729003528.png)
 
+Host `192.168.232.215` repeatedly sends rogue resolution responses to `192.168.232.162`, poisoning the name resolution cache:
 
-*********
+> **Question:** What is the IP address of the machine acting as the rogue entity?  
+> **Answer:** `192.168.232.215`
 
-Q4
+---
 
-We suspect that user accounts may have been compromised. To assess this, we must determine the username associated with the compromised account. What is the username of the account that the attacker compromised?
+### Q3 — Second Affected Machine Receiving Poisoned Responses
 
+To detect other victim machines poisoned by the rogue host, we filter for outbound LLMNR responses from `192.168.232.215`:
 
-Now I need to find the username of the account that got compromised and I will do this by filtering for NTLM authentication data using `ntlmssp.auth.username
+```text
+ip.src == 192.168.232.215 and llmnr
+```
 
-After applying this filter I saw that the victim `.176` authenticated to the attacker since it was poisoned and send its credentials as `janesmith`
+![Second victim machine poisoned for mistyped prinetr](images/Pasted%20image%2020260729003917.png)
 
-![[Pasted image 20260729004829.png]]
-*********
+The rogue machine responded to host `192.168.232.176`, which was attempting to resolve the mistyped printer name `prinetr`:
 
-Q5
+> **Question:** What is the IP address of the second machine that received poisoned responses from the rogue machine?  
+> **Answer:** `192.168.232.176`
 
-As part of our investigation, we aim to understand the extent of the attacker's activities. What is the hostname of the machine that the attacker accessed via SMB?
+---
 
-I looked for NTLM 
+### Q4 — Compromised User Account Username
 
-![[Pasted image 20260729010027.png]]
+Filtering for NTLM authentication exchanges (`ntlmssp.auth.username`):
+
+```text
+ntlmssp.auth.username
+```
+
+![NTLM authentication exchange identifying janesmith](images/Pasted%20image%2020260729004829.png)
+
+Following the poisoned response, victim machine `192.168.232.176` initiated an SMB connection to the attacker and transmitted authentication credentials for user `janesmith`:
+
+> **Question:** What is the username of the account that the attacker compromised?  
+> **Answer:** `janesmith`
+
+---
+
+### Q5 — Target Machine Hostname Accessed via SMB
+
+Following the SMB2 TCP stream (`tcp.stream eq 11`) between the attacker (`192.168.232.215`) and the victim (`192.168.232.176`):
+
+![NTLMSSP Challenge packet displaying Target Info and NetBIOS name](images/Pasted%20image%2020260729010027.png)
+
+Inspecting the **NTLMSSP Challenge** packet (`Target Info` structure):
+- **NetBIOS Domain Name:** `CYBERCACTUS`
+- **NetBIOS Computer Name:** `ACCOUNTINGPC`
+- **DNS Hostname:** `AccountingPC.cybercactus.local`
+
+> **Question:** What is the hostname of the machine that the attacker accessed via SMB?  
+> **Answer:** `ACCOUNTINGPC`
+
+---
+
+## Summary of Findings
+
+| Item | Value |
+| :--- | :--- |
+| **Initial Mistyped Query** | `fileshaare` |
+| **Rogue Attacker IP** | `192.168.232.215` |
+| **Second Victim IP** | `192.168.232.176` |
+| **Second Mistyped Query** | `prinetr` |
+| **Compromised User Account** | `janesmith` |
+| **Target Hostname** | `ACCOUNTINGPC` |
+| **Domain** | `cybercactus.local` |

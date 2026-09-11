@@ -6,6 +6,14 @@
 
 ---
 
+## Connected Investigations
+This challenge is part of the overarching **Byte Lotus Resort** storyline on TryHackMe:
+- **Part 1 — [The Brochure](<../TheBrochure/Writeup.md>)**: OSINT discovery of Vera the Concierge's public footprint and social media leakage.
+- **Part 2 — Overheard at Breakfast** (Current): OSINT investigating employee email `lambobytelotushotel@gmail.com` via Gravatar profile hashes.
+- **Part 3 — [PackedLight](<../PackedLight/Writeup.md>)**: Network Forensics tracking C2 beacons to `http://byte-lotus-hotel.thm:8080/` and decrypting XOR-encoded keylogger exfiltration.
+
+---
+
 ## Overview
 
 The challenge provides a message containing a contact email and a clue about a profile tool starting with the letter **G**. Using OSINT techniques, we identify the tool as Gravatar, generate the MD5 hash of the email address to access the public profile, and decode the hidden Base64 string to extract the flag.

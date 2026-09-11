@@ -1,87 +1,107 @@
-![[Pasted image 20260804233656.png]]
+# REvil - GOLD SOUTHFIELD Lab — CyberDefenders Writeup
 
-To begin your investigation, can you identify the filename of the note that the ransomware left behind?
+**Category:** Threat Hunting / Ransomware Analysis  
+**Platform:** CyberDefenders  
+**Threat Actor:** GOLD SOUTHFIELD (Pinchy Spider)  
+**Malware Family:** REvil / Sodinokibi  
+**Tools:** Splunk, Threat Intelligence (Triage / Any.Run)  
 
-Answer : `5uizv5660t-readme.txt`
-This the query I used that looks through the `revil` index for filenames with the word `readme` or `help` in the current directory.
+---
 
+## Connected Investigations
+- **Threat Actor Taxonomies:** Compare with [CyberDefenders: IcedID](<../IcedID/Writeup.md>) (threat group GOLD CABIN).
+- **System Recovery Disruption:** Compare with [CyberDefenders: MeteorHit - Indra Lab](<../MeteorHit - Indra Lab/Writeup.md>) (abusing administrative commands to prevent recovery).
 
+---
+
+## Scenario Overview
+
+In this lab, an enterprise Windows endpoint was encrypted by **REvil** (Sodinokibi) ransomware, operated by threat syndicate **GOLD SOUTHFIELD**. Using Splunk to analyze Windows Event Logs (Event ID 1 Process Creation, Event ID 11 File Creation), we trace the adversary from the drop of the ransom note to the originating disguised executable, uncover commands used to inhibit system recovery by deleting volume shadow copies, obtain the cryptographic file hash, and identify the attacker's Tor negotiation portal.
+
+---
+
+## Walkthrough
+
+### Q1 — Identifying the Ransom Note Filename
+
+![Splunk event search for ransomware indicators](images/Pasted%20image%2020260804233656.png)
+
+Querying the `revil` index for dropped text files containing common ransom note keywords (`README` or `HELP`):
+
+```spl
+index=revil winlog.event_data.TargetFilename="*README*" OR winlog.event_data.TargetFilename="*HELP*" 
+| table _time winlog.event_data.Image winlog.event_data.TargetFilename winlog.event_data.CurrentDirectory
 ```
-index=revil  winlog.event_data.TargetFilename="*README*" OR winlog.event_data.TargetFilename="*HELP*" | table _time winlog.event_data.Image winlog.event_data.TargetFilename winlog.event_data.CurrentDirectory
-```
 
-**********
+- **Answer:** `5uizv5660t-readme.txt`
 
+---
 
-Q2
+### Q2 — Ransomware Process ID (PID)
 
-After identifying the ransom note, the next step is to pinpoint the source. What's the process ID of the ransomware that's likely involved
+Tracing process creation events (Event ID 1) for the suspicious binary executing during the encryption window:
 
-Answer : `5348`
-
-This query looks for processes that are being created with facebook assistant.exe in it, and it shows the Parent Process Id , Parent Process ,  Process and process ID. The purpose of this is to find the when the process was actually created ,what spawned the process initially, and what the malicious process spawned after being spawned.
-
-```
+```spl
 index=revil winlog.event_id=1 "facebook assistant.exe"
 | table _time winlog.event_data.Image winlog.event_data.ProcessId winlog.event_data.ParentImage winlog.event_data.ParentProcessId
 ```
 
+![Splunk query showing ransomware PID and execution hierarchy](images/Pasted%20image%2020260805002745.png)
 
-![[Pasted image 20260805002745.png]]
+- **Answer:** `5348`
 
+---
 
+### Q3 — Executable File Path on Disk
 
+From the same process creation event in Q2, the image path reveals the binary location in the Administrator's Downloads directory:
 
-****
+- **Answer:** `C:\Users\Administrator\Downloads\facebook assistant.exe`
 
-Please enter a numeric answer.
+---
 
-Q3
+### Q4 — Command Used to Delete Volume Shadow Copies
 
-Having determined the ransomware's process ID, the next logical step is to locate its origin. Where can we find the ransomware's executable file?
+Ransomware routinely disables backup and recovery mechanisms prior to file encryption. Querying Splunk for PowerShell command line executions:
 
-Answer : `C:\Users\Administrator\Downloads\facebook assistant.exe`
-**********
+![Splunk command line search for recovery inhibition](images/Pasted%20image%2020260805005537.png)
+![Command line parameter showing shadow copy deletion](images/Pasted%20image%2020260805010244.png)
 
-
-Q4
-
-Now that you've pinpointed the ransomware's executable location, let's dig deeper. It's a common tactic for ransomware to disrupt system recovery methods. Can you identify the command that was used for this purpose?
-
-Answer : `Get-WmiObject Win32_Shadowcopy | ForEach-Object {$_.Delete();}`
-
-So I modified the query to find powershell commands. 
-
-![[Pasted image 20260805005537.png]]
-
-
-![[Pasted image 20260805010244.png]]
-
-```
+```powershell
 Get-WmiObject Win32_Shadowcopy | ForEach-Object {$_.Delete();}
 ```
-**********
 
-Q5
+- **Answer:** `Get-WmiObject Win32_Shadowcopy | ForEach-Object {$_.Delete();}`
 
+---
 
-As we trace the ransomware's steps, a deeper verification is needed. Can you provide the sha256 hash of the ransomware's executable to cross-check with known malicious signatures?
+### Q5 — SHA-256 Hash of the Ransomware Binary
 
-Answer : `B8D7FB4488C0556385498271AB9FFFDF0EB38BB2A330265D9852E3A6288092AA`
+Querying Splunk for file creation hashes associated with `facebook assistant.exe`:
 
-I modified the query to allow me to see the hashes associated with `facebook assistant.exe`
+![Splunk hash output for facebook assistant.exe](images/Pasted%20image%2020260805010653.png)
 
-![[Pasted image 20260805010653.png]]
-****************************************************************
+- **Answer:** `B8D7FB4488C0556385498271AB9FFFDF0EB38BB2A330265D9852E3A6288092AA`
 
-Q6
+---
 
+### Q6 — Threat Actor Tor (.onion) Negotiation Domain
 
+Querying the SHA-256 hash on `tri.age` (Triage sandbox) reveals the ransomware configuration and contact portal:
 
-One crucial piece remains: identifying the attacker's communication channel. Can you leverage threat intelligence and known Indicators of Compromise (IoCs) to pinpoint the ransomware author's onion domain?
+![Triage sandbox analysis revealing REvil onion portal](images/Pasted%20image%2020260805013320.png)
 
-Answer : `aplebzu47wgazapdqks6vrcv6zcnjppkbxbr6wketf56nf6aq2nmyoyd.onion`
+- **Answer:** `aplebzu47wgazapdqks6vrcv6zcnjppkbxbr6wketf56nf6aq2nmyoyd.onion`
 
-I went to `tri.age` and I search up the hash that i found through Splunk . After scrolling down I was able to see a `.onion` that was used for allowing the victim to decrypt a file and verify the legitimacy of the attackers threats.
+---
 
-![[Pasted image 20260805013320.png]]
+## Summary of Findings
+
+| Artifact / Indicator | Value |
+| :--- | :--- |
+| **Ransom Note** | `5uizv5660t-readme.txt` |
+| **Ransomware Executable** | `facebook assistant.exe` |
+| **Process ID (PID)** | `5348` |
+| **Inhibit Recovery Cmd** | `Get-WmiObject Win32_Shadowcopy \| ForEach-Object {$_.Delete();}` |
+| **SHA-256 Hash** | `B8D7FB4488C0556385498271AB9FFFDF0EB38BB2A330265D9852E3A6288092AA` |
+| **Tor Payment Portal** | `aplebzu47wgazapdqks6vrcv6zcnjppkbxbr6wketf56nf6aq2nmyoyd.onion` |
