@@ -16,6 +16,15 @@ CTFWriteups/
 
 ---
 
+## Core Investigation Methodology & Playbook
+
+- 📘 **[Professional DFIR Investigation Playbook](DFIR_Investigation_Playbook.md)**: A structured methodology for moving from question-hunting to hypothesis-driven intrusion analysis across CyberDefenders, Hack The Box, and TryHackMe.
+  - **The 6-Phase Investigative Spine:** Scoping $\rightarrow$ Anchor Lead ($T_0$) $\rightarrow$ Bidirectional Timeline Reconstruction $\rightarrow$ MITRE & Diamond Model Attribution $\rightarrow$ Blast Radius Scoping $\rightarrow$ Executive Synthesis.
+  - **Modular Artifact Checklists:** Network Traffic (Wireshark/Zeek), Host Telemetry (Windows EVTX & Sysmon), SIEM (Splunk SPL & Elastic KQL), Memory Forensics (Volatility 3), and Malware Triage.
+  - **Master Case Template:** Copy-pasteable Markdown case ledger with chronological timeline and IoC table.
+
+---
+
 ## Connected Investigations & Campaign Matrix
 
 Projects and investigations in this repository share recurring adversaries, storylines, or complementary investigative techniques:
