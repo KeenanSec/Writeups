@@ -11,7 +11,9 @@ CTFWriteups/
 ├── CyberDefenders/        # Blue Team & DFIR CTF Challenges (19 Labs)
 ├── TryHackMe/             # Threat Hunting, Forensics & Web Exploitation (7 Rooms)
 ├── Root-Me/               # Network Forensics & Protocol Challenges (4 Labs)
-└── SOC-Simulator/         # Enterprise SOC Triage Scenarios (1 Scenario)
+├── SOC-Simulator/         # Enterprise SOC Triage Scenarios (1 Scenario)
+├── PWN college/           # Binary Exploitation, Assembly & Architecture (1 Module)
+└── CrackMes/              # Reverse Engineering & Keygen Development (1 Lab)
 ```
 
 ---
@@ -85,6 +87,11 @@ Deep-dive frame parsing and legacy cleartext protocol captures:
 - **[The Crime](CyberDefenders/The%20Crime%20Lab/Writeup.md)** — Mobile Android forensics using ALEAPP to parse `gass.db`, `mmssms.db` extortion messages, Google Maps caches, flight boarding passes, and Discord chat records.
 - **[Letter](TryHackMe/Letter/README.md)** — OSINT challenge notes analyzing French sea-rescue (SNSM) envelopes and vintage newspaper archives (*L'Ouest-Éclair*).
 
+### 9. Low-Level Architecture, Assembly & Reverse Engineering
+Deep dives into processor virtual memory, x86_64 assembly, and software reverse engineering:
+- **[pwn.college: Assembly Crash Course](PWN%20college/Assembly%20Crash%20Course.md)** — In-depth breakdown of x86_64 virtual memory architecture (128 TB canonical addressing), stack frames, pointer dereferencing, calling conventions (System V vs. MS x64), load-modify-store paradigm, and RIP-relative addressing.
+- **[Crackmes.one: Cobrasniper555's Crackme #2](CrackMes/Cobrasniper555%20-%20Crackme%202/Writeup.md)** — Reverse-engineering a Windows C++ binary in x64dbg/IDA, bypassing trial registry checks (`HKCU\Software\Cobra`), analyzing the dual-pass validation algorithm, and writing a functional C++ key generator.
+
 ---
 
 ## Comprehensive Writeup Catalog
@@ -122,3 +129,5 @@ Deep-dive frame parsing and legacy cleartext protocol captures:
 | **Root-Me** | Kerberos - Pre-Authentication | Network / AD | Krb5RoastParser, Hashcat | [View Writeup](Root-Me/Kerberos%20-%20Pre-Authentication/Writeup.md) |
 | **Root-Me** | TELNET - authentication | Cleartext Protocols | Wireshark | [View Writeup](Root-Me/TELNET%20-%20authentication/Writeup.md) |
 | **SOC-Simulator** | LNK-in-Archive PowerShell Phishing | SOC Incident Triage | SIEM, Event Logs | [View Writeup](SOC-Simulator/LNK-in-Archive%20PowerShell%20Phishing/Writeup.md) |
+| **pwn.college** | Assembly Crash Course | Architecture & x86_64 | GDB, GCC, NASM | [View Notes](PWN%20college/Assembly%20Crash%20Course.md) |
+| **Crackmes.one** | Cobrasniper555's Crackme #2 | Reverse Engineering / Keygen | x64dbg, IDA, C++ | [View Writeup](CrackMes/Cobrasniper555%20-%20Crackme%202/Writeup.md) |

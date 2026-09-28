@@ -1,0 +1,223 @@
+Crackme : cobrasniper555's Crackme #2
+reversed by : Nuno_1
+Skills : 2 (from a scale of 1 to 10)
+Used applications : IDA
+
+Skills that can be developed :
+- Using debuggers / dissasemblers.
+- Assembley knowlage.
+- reversing an algoritim.
+
+Known bugs :
+- My keygen does not support SPACE character because I have used scanf.
+
+Intro :
+-------
+
+This is a simple crackme, I would recommend it for beginners.
+
+When you start the application a message box is poped up and say that you are in a trial or somthing.
+
+When you pass the first stage which is a registry validation there is a Name to serial generation.
+
+Lets start with the first stage , the registry :
+
+Registry :
+----------
+
+This can easly found by breaking on RegOpenKeyA. here is a dump when you break :
+
+00401290  /$ 55             PUSH EBP
+00401291  |. 89E5           MOV EBP,ESP
+00401293  |. 83EC 18        SUB ESP,18
+00401296  |. 8D45 FC        LEA EAX,DWORD PTR SS:[EBP-4]             ; |
+00401299  |. 894424 08      MOV DWORD PTR SS:[ESP+8],EAX             ; |
+0040129D  |. C74424 04 0040>MOV DWORD PTR SS:[ESP+4],Test.00404000   ; |ASCII "Software\Cobra"
+004012A5  |. C70424 0100008>MOV DWORD PTR SS:[ESP],80000001          ; |
+004012AC  |. E8 FF0E0000    CALL <JMP.&ADVAPI32.RegOpenKeyA>         ; \RegOpenKeyA
+004012B1  |. 83EC 0C        SUB ESP,0C
+004012B4  |. C9             LEAVE
+004012B5  \. C3             RETN
+
+
+Well , you have the answer infront of you. the key is HKEY_LOCAL_USER\Software\Cobra. go create this key (or run my Cobra.reg file)
+run the crackme again and the the trial error dissaper. you now able to use the menu register to get into the key generation.
+
+type any name/serial break on GetDialogTextA and press ok.
+
+004016E8  |. E8 D3090000    CALL <JMP.&USER32.GetDlgItemTextA>       ; \GetDlgItemTextA
+004016ED  |. 83EC 10        SUB ESP,10
+004016F0  |. C74424 0C 5000>MOV DWORD PTR SS:[ESP+C],50              ; |
+004016F8  |. 8D45 88        LEA EAX,DWORD PTR SS:[EBP-78]            ; |
+004016FB  |. 894424 08      MOV DWORD PTR SS:[ESP+8],EAX             ; |
+004016FF  |. C74424 04 6B00>MOV DWORD PTR SS:[ESP+4],6B              ; |
+00401707  |. 8B45 08        MOV EAX,DWORD PTR SS:[EBP+8]             ; |
+0040170A  |. 890424         MOV DWORD PTR SS:[ESP],EAX               ; |
+0040170D  |. E8 AE090000    CALL <JMP.&USER32.GetDlgItemTextA>       ; \GetDlgItemTextA
+00401712  |. 83EC 10        SUB ESP,10
+00401715  |. 8D85 38FFFFFF  LEA EAX,DWORD PTR SS:[EBP-C8]
+0040171B  |. 894424 04      MOV DWORD PTR SS:[ESP+4],EAX
+0040171F  |. 8D45 D8        LEA EAX,DWORD PTR SS:[EBP-28]
+00401722  |. 890424         MOV DWORD PTR SS:[ESP],EAX
+00401725  |. E8 D2FBFFFF    CALL Test.004012FC
+0040172A  |. 8D85 38FFFFFF  LEA EAX,DWORD PTR SS:[EBP-C8]            ; ||
+00401730  |. 8D55 88        LEA EDX,DWORD PTR SS:[EBP-78]            ; ||
+00401733  |. 894424 04      MOV DWORD PTR SS:[ESP+4],EAX             ; ||
+00401737  |. 891424         MOV DWORD PTR SS:[ESP],EDX               ; ||
+0040173A  |. E8 81080000    CALL <JMP.&msvcrt.strcmp>                ; |\strcmp
+0040173F  |. 85C0           TEST EAX,EAX                             ; |
+00401741  |. 75 2D          JNZ SHORT Test.00401770                  ; |
+00401743  |. C74424 0C 0000>MOV DWORD PTR SS:[ESP+C],0               ; |
+0040174B  |. C74424 08 2B40>MOV DWORD PTR SS:[ESP+8],Test.0040402B   ; |ASCII "Alert"
+00401753  |. C74424 04 3140>MOV DWORD PTR SS:[ESP+4],Test.00404031   ; |ASCII "You are now registered!"
+0040175B  |. 8B45 08        MOV EAX,DWORD PTR SS:[EBP+8]             ; |
+0040175E  |. 890424         MOV DWORD PTR SS:[ESP],EAX               ; |
+00401761  |. E8 6A090000    CALL <JMP.&USER32.MessageBoxA>           ; \MessageBoxA
+00401766  |. 83EC 10        SUB ESP,10
+00401769  |. E8 48FBFFFF    CALL Test.004012B6
+0040176E  |. EB 3E          JMP SHORT Test.004017AE
+00401770  |> C74424 0C 0000>MOV DWORD PTR SS:[ESP+C],0               ; |
+00401778  |. C74424 08 2B40>MOV DWORD PTR SS:[ESP+8],Test.0040402B   ; |ASCII "Alert"
+00401780  |. C74424 04 4C40>MOV DWORD PTR SS:[ESP+4],Test.0040404C   ; |ASCII "You're information is wrong.
+Please try again!"
+00401788  |. 8B45 08        MOV EAX,DWORD PTR SS:[EBP+8]             ; |
+0040178B  |. 890424         MOV DWORD PTR SS:[ESP],EAX               ; |
+0040178E  |. E8 3D090000    CALL <JMP.&USER32.MessageBoxA>           ; \MessageBoxA
+
+this is very easy to understand, those two GetDlgItemTextA pull the Name/Serial you entered. the call at 00401725 is
+the function that create the valid serial from the name followed by strcmp call which compare the valid serial with the entered one.
+
+lets get into 004012FC to look into the key generation function :
+
+Key Generation function
+-----------------------
+
+The key generation is basiclly divided into 3 sections :
+
+1.Each character of the name is been added to the one below it. incase this is the first character the number 5 is added.
+  the value is now xored by 0x12c adding to the sum then shift left 2 bits and shift the result 2 bits left again.
+  finally the value is been shift right 2 bits and AND with 0xF0F0F0F0.
+
+004012FC  /$ 55             PUSH EBP
+004012FD  |. 89E5           MOV EBP,ESP
+004012FF  |. 81EC D8000000  SUB ESP,0D8
+00401305  |. 8B45 08        MOV EAX,DWORD PTR SS:[EBP+8]             ; |EBP+8 = name
+00401308  |. 890424         MOV DWORD PTR SS:[ESP],EAX               ; |
+0040130B  |. E8 C00C0000    CALL <JMP.&msvcrt.strlen>                ; \strlen
+00401310  |. 8945 F4        MOV DWORD PTR SS:[EBP-C],EAX             ;  EBP-C length
+00401313  |. C785 64FFFFFF >MOV DWORD PTR SS:[EBP-9C],0              ;  EBP-9C = currentlength
+0040131D  |> 8B85 64FFFFFF  /MOV EAX,DWORD PTR SS:[EBP-9C]
+00401323  |. 3B45 F4        |CMP EAX,DWORD PTR SS:[EBP-C]            ;  jump if current length >= length
+00401326  |. 0F8D A0000000  |JGE Test.004013CC
+0040132C  |. 8B45 08        |MOV EAX,DWORD PTR SS:[EBP+8]
+0040132F  |. 0385 64FFFFFF  |ADD EAX,DWORD PTR SS:[EBP-9C]           ;  EAX = name[currentlength]
+00401335  |. 0FBE00         |MOVSX EAX,BYTE PTR DS:[EAX]
+00401338  |. 8945 F0        |MOV DWORD PTR SS:[EBP-10],EAX           ;  save character at EBP-10
+0040133B  |. 83BD 64FFFFFF >|CMP DWORD PTR SS:[EBP-9C],0             ;  is this the first character ?
+00401342  |. 74 1E          |JE SHORT Test.00401362                  ;  this is not the first char.
+00401344  |. 8B85 64FFFFFF  |MOV EAX,DWORD PTR SS:[EBP-9C]           
+0040134A  |. 0345 08        |ADD EAX,DWORD PTR SS:[EBP+8]            ;  EAX = Name[currentlength-1]
+0040134D  |. 48             |DEC EAX
+0040134E  |. 0FBE00         |MOVSX EAX,BYTE PTR DS:[EAX]
+00401351  |. 8985 60FFFFFF  |MOV DWORD PTR SS:[EBP-A0],EAX           ;  save into EBP-A0
+00401357  |. 8B45 F0        |MOV EAX,DWORD PTR SS:[EBP-10]
+0040135A  |. 0185 60FFFFFF  |ADD DWORD PTR SS:[EBP-A0],EAX           ;  sum both characters
+00401360  |. EB 0C          |JMP SHORT Test.0040136E
+00401362  |> 8B45 F0        |MOV EAX,DWORD PTR SS:[EBP-10]           ;  get current character to eax
+00401365  |. 83C0 05        |ADD EAX,5                               ;  add 5 to character
+00401368  |. 8985 60FFFFFF  |MOV DWORD PTR SS:[EBP-A0],EAX           ;  save into EBP-A0
+0040136E  |> 8B85 60FFFFFF  |MOV EAX,DWORD PTR SS:[EBP-A0]
+00401374  |. 8945 F0        |MOV DWORD PTR SS:[EBP-10],EAX           ;  save into EBP-10
+00401377  |. 8D45 F0        |LEA EAX,DWORD PTR SS:[EBP-10]
+0040137A  |. 8130 2C010000  |XOR DWORD PTR DS:[EAX],12C              ;  xor number with 12c
+00401380  |. 8B55 F0        |MOV EDX,DWORD PTR SS:[EBP-10]
+00401383  |. 89D0           |MOV EAX,EDX                             ;  mov the xorred number to EAX
+00401385  |. C1E0 02        |SHL EAX,2                               ;  shift left 2 bits
+00401388  |. 01D0           |ADD EAX,EDX                             ;  add to sum
+0040138A  |. C1E0 02        |SHL EAX,2                               ;  shift left more 2 bit
+0040138D  |. 8945 F0        |MOV DWORD PTR SS:[EBP-10],EAX           ;  save in EBP-10
+00401390  |. 8B45 F0        |MOV EAX,DWORD PTR SS:[EBP-10]
+00401393  |. 8985 5CFFFFFF  |MOV DWORD PTR SS:[EBP-A4],EAX           ;  save number into EBP-A4
+00401399  |. 83BD 5CFFFFFF >|CMP DWORD PTR SS:[EBP-A4],0
+004013A0  |. 79 07          |JNS SHORT Test.004013A9
+004013A2  |. 8385 5CFFFFFF >|ADD DWORD PTR SS:[EBP-A4],3
+004013A9  |> 8B85 5CFFFFFF  |MOV EAX,DWORD PTR SS:[EBP-A4]
+004013AF  |. C1F8 02        |SAR EAX,2                               ;  shift with roll right eax by 2 bits
+004013B2  |. 8945 F0        |MOV DWORD PTR SS:[EBP-10],EAX           ;  save back into EBP-10
+004013B5  |. BA F0F0F0F0    |MOV EDX,F0F0F0F0                        ;  EDX = F0F0F0F0
+004013BA  |. 8D45 F0        |LEA EAX,DWORD PTR SS:[EBP-10]           ;  load the point of the current sum
+004013BD  |. 2110           |AND DWORD PTR DS:[EAX],EDX              ;  and the number with F0F0F0F0
+004013BF  |. 8D85 64FFFFFF  |LEA EAX,DWORD PTR SS:[EBP-9C]
+004013C5  |. FF00           |INC DWORD PTR DS:[EAX]                  ;  inc current length
+004013C7  |.^E9 51FFFFFF    \JMP Test.0040131D
+
+2.Very similar to the first part but going from the end of the name string to the start.
+
+004013CC  |> 8B45 F4        MOV EAX,DWORD PTR SS:[EBP-C]
+004013CF  |. 8985 64FFFFFF  MOV DWORD PTR SS:[EBP-9C],EAX            ;  EBP-9C = length of name
+004013D5  |> 83BD 64FFFFFF >/CMP DWORD PTR SS:[EBP-9C],0
+004013DC  |. 0F8E A2000000  |JLE Test.00401484                       ;  jmp if currentLength <= 0
+004013E2  |. 8B45 08        |MOV EAX,DWORD PTR SS:[EBP+8]
+004013E5  |. 0385 64FFFFFF  |ADD EAX,DWORD PTR SS:[EBP-9C]           ;  EAX = name[currentlength]
+004013EB  |. 0FBE00         |MOVSX EAX,BYTE PTR DS:[EAX]
+004013EE  |. 8945 EC        |MOV DWORD PTR SS:[EBP-14],EAX           ;  keep character at EBP-14
+004013F1  |. 8B85 64FFFFFF  |MOV EAX,DWORD PTR SS:[EBP-9C]
+004013F7  |. 3B45 F4        |CMP EAX,DWORD PTR SS:[EBP-C]
+004013FA  |. 74 1E          |JE SHORT Test.0040141A                  ;  if currentLength == length
+004013FC  |. 8B85 64FFFFFF  |MOV EAX,DWORD PTR SS:[EBP-9C]
+00401402  |. 0345 08        |ADD EAX,DWORD PTR SS:[EBP+8]
+00401405  |. 40             |INC EAX                                 ;  get Name[currentLength+1]
+00401406  |. 0FBE00         |MOVSX EAX,BYTE PTR DS:[EAX]
+00401409  |. 8985 58FFFFFF  |MOV DWORD PTR SS:[EBP-A8],EAX           ;  save at a8
+0040140F  |. 8B45 EC        |MOV EAX,DWORD PTR SS:[EBP-14]           ;  get current character
+00401412  |. 0185 58FFFFFF  |ADD DWORD PTR SS:[EBP-A8],EAX
+00401418  |. EB 0C          |JMP SHORT Test.00401426
+0040141A  |> 8B45 EC        |MOV EAX,DWORD PTR SS:[EBP-14]
+0040141D  |. 83C0 05        |ADD EAX,5                               ;  add the character 5
+00401420  |. 8985 58FFFFFF  |MOV DWORD PTR SS:[EBP-A8],EAX           ;  EBP-A8 = new character
+00401426  |> 8B85 58FFFFFF  |MOV EAX,DWORD PTR SS:[EBP-A8]
+0040142C  |. 8945 EC        |MOV DWORD PTR SS:[EBP-14],EAX
+0040142F  |. 8D45 EC        |LEA EAX,DWORD PTR SS:[EBP-14]           ;  load pointer of new character
+00401432  |. 8130 2C010000  |XOR DWORD PTR DS:[EAX],12C              ;  xor with 12c
+00401438  |. 8B55 EC        |MOV EDX,DWORD PTR SS:[EBP-14]
+0040143B  |. 89D0           |MOV EAX,EDX
+0040143D  |. C1E0 02        |SHL EAX,2                               ;  shift left 2
+00401440  |. 01D0           |ADD EAX,EDX                             ;  add to current sum
+00401442  |. C1E0 02        |SHL EAX,2                               ;  shift left 2
+00401445  |. 8945 EC        |MOV DWORD PTR SS:[EBP-14],EAX           ;  save into EBP-14
+00401448  |. 8B45 EC        |MOV EAX,DWORD PTR SS:[EBP-14]
+0040144B  |. 8985 54FFFFFF  |MOV DWORD PTR SS:[EBP-AC],EAX
+00401451  |. 83BD 54FFFFFF >|CMP DWORD PTR SS:[EBP-AC],0
+00401458  |. 79 07          |JNS SHORT Test.00401461
+0040145A  |. 8385 54FFFFFF >|ADD DWORD PTR SS:[EBP-AC],3
+00401461  |> 8B85 54FFFFFF  |MOV EAX,DWORD PTR SS:[EBP-AC]
+00401467  |. C1F8 02        |SAR EAX,2                               ;  shift right 2
+0040146A  |. 8945 EC        |MOV DWORD PTR SS:[EBP-14],EAX           ;  save at EBP-14
+0040146D  |. BA F0F0F0F0    |MOV EDX,F0F0F0F0
+00401472  |. 8D45 EC        |LEA EAX,DWORD PTR SS:[EBP-14]
+00401475  |. 2110           |AND DWORD PTR DS:[EAX],EDX              ;  and sum with F0F0F0F0
+00401477  |. 8D85 64FFFFFF  |LEA EAX,DWORD PTR SS:[EBP-9C]
+0040147D  |. FF08           |DEC DWORD PTR DS:[EAX]                  ;  decrease currentLength
+0040147F  |.^E9 51FFFFFF    \JMP Test.004013D5
+
+3.The two values generated by those two operations are now displayed in the format of : REG-l%X-l%X-KEY while the first 
+  value is the first l%X and the second value is the sum of the two values. so incase we have the hex numbers 10 20 
+  the serial will be : REG-10-30-KEY.
+
+00401484  |> 8B45 EC        MOV EAX,DWORD PTR SS:[EBP-14]            
+00401487  |. 894424 10      MOV DWORD PTR SS:[ESP+10],EAX            
+0040148B  |. 8B45 EC        MOV EAX,DWORD PTR SS:[EBP-14]            
+0040148E  |. 0345 F0        ADD EAX,DWORD PTR SS:[EBP-10]            ; sum both numbers to EAX
+00401491  |. 894424 0C      MOV DWORD PTR SS:[ESP+C],EAX             ; move them to the stack
+00401495  |. 8B45 F0        MOV EAX,DWORD PTR SS:[EBP-10]            ; load the first number to EAX
+00401498  |. 894424 08      MOV DWORD PTR SS:[ESP+8],EAX             ; move it to the stack
+0040149C  |. C74424 04 0F40>MOV DWORD PTR SS:[ESP+4],Test.0040400F   ; |ASCII "REG-%lX-%lX-KEY"
+004014A4  |. 8B45 0C        MOV EAX,DWORD PTR SS:[EBP+C]             ; |
+004014A7  |. 890424         MOV DWORD PTR SS:[ESP],EAX               ; |
+004014AA  |. E8 710C0000    CALL <JMP.&USER32.wsprintfA>             ; \wsprintfA will parse the string
+004014AF  |. C9             LEAVE
+004014B0  \. C3             RETN
+
+Thats it, you can look at my C file attached to my zip.
+
+Nuno_1
