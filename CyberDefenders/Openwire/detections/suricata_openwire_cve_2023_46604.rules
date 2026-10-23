@@ -1,0 +1,6 @@
+# Suricata / Snort Rule: Apache ActiveMQ OpenWire Deserialization RCE (CVE-2023-46604)
+# Reference: CyberDefenders OpenWire Lab
+# Author: Keenan (KeenanSec)
+# Date: 2026-10-23
+
+alert tcp any any -> $HOME_NET 61616 (msg:"SEC-ALERT Apache ActiveMQ OpenWire Deserialization Attempt (CVE-2023-46604)"; flow:established,to_server; content:"|1f|"; offset:4; depth:1; content:"org.springframework.context.support.ClassPathXmlApplicationContext"; nocase; fast_pattern; reference:cve,2023-46604; reference:url,activemq.apache.org/security-advisories.data/CVE-2023-46604-announcement.txt; classtype:attempted-admin; sid:1000001; rev:1;)

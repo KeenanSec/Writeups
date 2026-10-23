@@ -56,6 +56,16 @@ Once connected, the stager uses **direct memory execution** (`mmap` with `PROT_E
 | **Exploit File** | `invoice.xml` | CVE-2023-46604 XML payload |
 | **Dropped Binary** | `docker` | 250-byte Linux x86-64 reverse TCP stager |
 
+### Detection Engineering & Threat Hunting Rules
+
+Production detection rules covering each stage of the attack chain:
+* **Host / SIEM (Sigma):** [`sigma_activemq_cve_2023_46604.yml`](./detections/sigma_activemq_cve_2023_46604.yml) — Detects ActiveMQ `java` process spawning shells, downloaders, or executing from `/tmp`.
+* **Network IDS (Suricata):** [`suricata_openwire_cve_2023_46604.rules`](./detections/suricata_openwire_cve_2023_46604.rules) — Detects OpenWire deserialization packets (Type `0x1f` ExceptionResponse) loading `ClassPathXmlApplicationContext` on port 61616.
+* **Hunting / Binary (YARA):** [`yara_linux_reverse_tcp_stager.yar`](./detections/yara_linux_reverse_tcp_stager.yar) — Fingerprints the 250-byte Linux x86-64 reverse TCP stager's raw syscall sequence (`mmap` RWX $\rightarrow$ `sys_socket` $\rightarrow$ `sys_connect` $\rightarrow$ `jmp *%rsi`).
+
+See the [Detections Directory](./detections/) for deployment instructions and query conversion guides.
+
+
 
 
 

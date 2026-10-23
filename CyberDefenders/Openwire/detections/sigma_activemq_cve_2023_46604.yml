@@ -1,0 +1,47 @@
+title: Suspicious Process Spawning from Apache ActiveMQ (CVE-2023-46604)
+id: e4b2d871-3312-4f79-8cb1-8051283e9b01
+status: experimental
+description: Detects suspicious child processes (such as shells, downloaders, and fileless interpreters) spawned by Apache ActiveMQ (java process), characteristic of CVE-2023-46604 exploitation.
+references:
+    - https://nvd.nist.gov/vuln/detail/CVE-2023-46604
+    - https://activemq.apache.org/security-advisories.data/CVE-2023-46604-announcement.txt
+author: Keenan (KeenanSec)
+date: 2026-10-23
+tags:
+    - attack.execution
+    - attack.t1059
+    - attack.initial_access
+    - attack.t1190
+    - attack.defense_evasion
+    - attack.t1036
+    - cve.2023.46604
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_parent:
+        Image|endswith: '/java'
+        CommandLine|contains: 'activemq'
+    selection_child_process:
+        Image|endswith:
+            - '/sh'
+            - '/bash'
+            - '/dash'
+            - '/curl'
+            - '/wget'
+            - '/chmod'
+            - '/python'
+            - '/python3'
+            - '/perl'
+            - '/ruby'
+    selection_child_cmdline:
+        CommandLine|contains:
+            - 'curl'
+            - 'wget'
+            - '/tmp/'
+            - '/dev/shm/'
+            - 'chmod +x'
+    condition: selection_parent and (selection_child_process or selection_child_cmdline)
+falsepositives:
+    - Administrative automation or monitoring scripts wrapped directly into ActiveMQ start scripts (uncommon)
+level: high
